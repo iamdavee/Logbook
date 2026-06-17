@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String
+  role           String   // "student" | "supervisor" | "admin"
+  supervisorType String?  // "industry" | "school" (for supervisors)
+  matricNumber   String?  @unique // for students
+  department     String?
+  level          String?  // e.g. "400"
+  company        String?  // student's placement company
+  avatar         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Student relations
+  logEntries     LogEntry[]           @relation("StudentEntries")
+  supervisors    StudentSupervisor[]  @relation("StudentAssignments")
+
+  // Supervisor relations
+  students       StudentSupervisor[]  @relation("SupervisorAssignments")
+  reviews        Review[]
+}
+
+model LogEntry {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      User     @relation("StudentEntries", fields: [studentId], references: [id], onDelete: Cascade)
+  date         String   // ISO date string "YYYY-MM-DD"
+  week         Int
+  day          String   // "Monday" | "Tuesday" | ...
+  company      String?
+  task         String
+  skillsLearned String?
+  attachmentUrl String?
+  status       String   @default("pending") // "pending" | "approved" | "rejected"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reviews      Review[]
+
+  @@unique([studentId, week, day])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  logEntryId  String
+  logEntry    LogEntry @relation(fields: [logEntryId], references: [id], onDelete: Cascade)
+  supervisorId String
+  supervisor  User     @relation(fields: [supervisorId], references: [id])
+  action      String   // "approved" | "rejected"
+  comment     String?
+  createdAt   DateTime @default(now())
+}
+
+model StudentSupervisor {
+  id           String @id @default(cuid())
+  studentId    String
+  student      User   @relation("StudentAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  supervisorId String
+  supervisor   User   @relation("SupervisorAssignments", fields: [supervisorId], references: [id], onDelete: Cascade)
+  type         String // "industry" | "school"
+
+  @@unique([studentId, supervisorId, type])
+}
