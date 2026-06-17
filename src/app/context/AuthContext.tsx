@@ -23,7 +23,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const API_BASE = "http://localhost/logbook-api";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost/logbook-api";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,

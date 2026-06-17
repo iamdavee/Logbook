@@ -1,0 +1,38 @@
+services:
+  # ── PHP Backend ──────────────────────────────────────────────────────────────
+  - type: web
+    name: siwes-logbook-api
+    runtime: docker
+    dockerfilePath: ./backend-php/Dockerfile
+    dockerContext: ./backend-php
+    plan: free
+    envVars:
+      - key: DB_HOST
+        sync: false          # Set this in Render dashboard
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure random value
+
+  # ── React Frontend ───────────────────────────────────────────────────────────
+  - type: web
+    name: siwes-logbook-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    plan: free
+    envVars:
+      - key: VITE_API_BASE
+        sync: false          # Set to your backend URL, e.g. https://siwes-logbook-api.onrender.com
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
