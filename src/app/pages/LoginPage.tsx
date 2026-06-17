@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth, Role } from "../context/AuthContext";
 import { Eye, EyeOff, ChevronDown, Check } from "lucide-react";
@@ -15,8 +15,13 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const supervisorTypes = ["Industry Based Supervisor", "School Based Supervisor"];
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
+
+  // Navigate only after user state is committed in context
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +50,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email.trim(), password, role, supType);
-      navigate("/dashboard");
+      // navigation happens via useEffect when user state updates
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Please check your credentials.");
     } finally {

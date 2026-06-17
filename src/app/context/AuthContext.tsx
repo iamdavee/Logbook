@@ -18,6 +18,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  isLoading: boolean;
   login: (email: string, password: string, role: Role, supervisorType?: SupervisorType) => Promise<void>;
   logout: () => void;
 }
@@ -27,6 +28,7 @@ const API_BASE = "http://localhost/logbook-api";
 const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
+  isLoading: true,
   login: async () => {},
   logout: () => {},
 });
@@ -35,7 +37,6 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Map PHP backend roles to frontend roles
 function backendRoleToFrontend(backendRole: string): { role: Role; supervisorType?: SupervisorType } {
   if (backendRole === "industry_supervisor") return { role: "supervisor", supervisorType: "industry" };
   if (backendRole === "school_coordinator") return { role: "supervisor", supervisorType: "school" };
@@ -45,9 +46,9 @@ function backendRoleToFrontend(backendRole: string): { role: Role; supervisorTyp
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("auth_token"));
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on page load
   useEffect(() => {
     const saved = localStorage.getItem("auth_token");
     const savedUser = localStorage.getItem("auth_user");
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("auth_user");
       }
     }
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string, _role: Role, supervisorType?: SupervisorType) => {
@@ -104,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

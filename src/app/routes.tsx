@@ -18,8 +18,16 @@ import { useAuth } from "./context/AuthContext";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Loading…</div>;
   if (!user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+function PublicRoute({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Loading…</div>;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -34,8 +42,8 @@ function DashboardRouter() {
 }
 
 export const router = createBrowserRouter([
-  { path: "/", Component: LoginPage },
-  { path: "/signup", Component: SignUpPage },
+  { path: "/", element: <PublicRoute><LoginPage /></PublicRoute> },
+  { path: "/signup", element: <PublicRoute><SignUpPage /></PublicRoute> },
   { path: "/forgot-password", Component: ForgotPasswordPage },
   {
     path: "/dashboard",
