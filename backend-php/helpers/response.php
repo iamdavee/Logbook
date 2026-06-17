@@ -11,9 +11,19 @@ function error_response(string $message, int $status = 400): void {
 }
 
 function cors_headers(): void {
-    header('Access-Control-Allow-Origin: *');
+    $allowed = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'];
+    $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+    if (in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    } else {
+        header('Access-Control-Allow-Origin: *');
+    }
+
     header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Credentials: true');
+    header('Vary: Origin');
     header('Content-Type: application/json; charset=utf-8');
 
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
