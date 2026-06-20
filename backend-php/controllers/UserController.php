@@ -35,6 +35,7 @@ class UserController {
             (SELECT COUNT(*) FROM users WHERE role = "student")              AS total_students,
             (SELECT COUNT(*) FROM users WHERE role = "industry_supervisor")  AS total_industry_supervisors,
             (SELECT COUNT(*) FROM users WHERE role = "school_coordinator")   AS total_school_coordinators,
+            (SELECT COUNT(*) FROM users WHERE role = "itf_official")         AS total_itf_officials,
             (SELECT COUNT(*) FROM users WHERE role = "admin")                AS total_admins,
             (SELECT COUNT(*) FROM log_entries)                               AS total_entries,
             (SELECT COUNT(*) FROM log_entries WHERE status = "pending")      AS pending_entries,

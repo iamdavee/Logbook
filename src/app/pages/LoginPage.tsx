@@ -61,12 +61,14 @@ export function LoginPage() {
   const roles: { value: Role; label: string }[] = [
     { value: "student", label: "Student" },
     { value: "supervisor", label: "Supervisor" },
+    { value: "itf_official", label: "ITF Official" },
   ];
 
   const roleColors: Record<Role, { active: string; button: string; shadow: string }> = {
-    student: { active: "bg-blue-600", button: "bg-blue-600 hover:bg-blue-700", shadow: "shadow-blue-600/20" },
-    supervisor: { active: "bg-red-600", button: "bg-red-600 hover:bg-red-700", shadow: "shadow-red-600/20" },
-    admin: { active: "bg-purple-600", button: "bg-purple-600 hover:bg-purple-700", shadow: "shadow-purple-600/20" },
+    student:      { active: "bg-blue-600",  button: "bg-blue-600 hover:bg-blue-700",   shadow: "shadow-blue-600/20" },
+    supervisor:   { active: "bg-red-600",   button: "bg-red-600 hover:bg-red-700",     shadow: "shadow-red-600/20" },
+    admin:        { active: "bg-purple-600", button: "bg-purple-600 hover:bg-purple-700", shadow: "shadow-purple-600/20" },
+    itf_official: { active: "bg-green-600", button: "bg-green-600 hover:bg-green-700", shadow: "shadow-green-600/20" },
   };
   const c = roleColors[role];
 

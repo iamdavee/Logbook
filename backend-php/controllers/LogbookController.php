@@ -54,6 +54,25 @@ class LogbookController {
             json_response($stmt->fetchAll());
         }
 
+        // itf_official: read-only access to all entries
+        if ($role === 'itf_official') {
+            $sql    = 'SELECT le.*, u.name AS student_name, u.matric_number,
+                              r.action AS review_action, r.comment AS review_comment
+                       FROM log_entries le
+                       JOIN users u ON u.id = le.student_id
+                       LEFT JOIN reviews r ON r.log_entry_id = le.id
+                       WHERE 1=1';
+            $params = [];
+            if ($week)      { $sql .= ' AND le.week_number = ?'; $params[] = $week; }
+            if ($status)    { $sql .= ' AND le.status = ?';      $params[] = $status; }
+            if ($studentId) { $sql .= ' AND le.student_id = ?';  $params[] = $studentId; }
+            $sql .= ' ORDER BY le.created_at DESC';
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            json_response($stmt->fetchAll());
+        }
+
         // admin
         $sql    = 'SELECT le.*, u.name AS student_name, u.matric_number
                    FROM log_entries le JOIN users u ON u.id = le.student_id WHERE 1=1';

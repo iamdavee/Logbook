@@ -18,7 +18,7 @@ class AuthController {
             }
         }
 
-        $allowed_roles = ['student', 'industry_supervisor', 'school_coordinator', 'admin'];
+        $allowed_roles = ['student', 'industry_supervisor', 'school_coordinator', 'admin', 'itf_official'];
         if (!in_array($body['role'], $allowed_roles, true)) {
             error_response('Invalid role. Must be one of: ' . implode(', ', $allowed_roles));
         }

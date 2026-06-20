@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router";
 import { useAuth, Role } from "../context/AuthContext";
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, Users, Settings,
-  LogOut, Menu, X, Bell, ChevronDown,
+  LogOut, Menu, X, Bell, ChevronDown, MessageSquare,
 } from "lucide-react";
 import itfLogo from "../../imports/image.png";
 
@@ -23,6 +23,12 @@ const navItems: Record<Role, { label: string; icon: ReactNode; path: string }[]>
   admin: [
     { label: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
     { label: "Users", icon: <Users size={20} />, path: "/users" },
+    { label: "Settings", icon: <Settings size={20} />, path: "/settings" },
+  ],
+  itf_official: [
+    { label: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
+    { label: "Students", icon: <Users size={20} />, path: "/students" },
+    { label: "Entries", icon: <MessageSquare size={20} />, path: "/reviews" },
     { label: "Settings", icon: <Settings size={20} />, path: "/settings" },
   ],
 };

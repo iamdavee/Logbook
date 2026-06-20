@@ -9,12 +9,12 @@ class StudentController {
     // GET /api/students
     public function index(): void {
         $auth = require_auth();
-        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin']);
+        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin', 'itf_official']);
         $db   = getDB();
         $id   = (int)$auth['id'];
         $role = $auth['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'itf_official') {
             $stmt = $db->prepare('
                 SELECT u.id, u.name, u.email, u.matric_number, u.department, u.level, u.company,
                        u.avatar, u.created_at,
@@ -55,13 +55,13 @@ class StudentController {
     // GET /api/students/{id}
     public function show(int $studentId): void {
         $auth = require_auth();
-        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin']);
+        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin', 'itf_official']);
         $db   = getDB();
         $id   = (int)$auth['id'];
         $role = $auth['role'];
 
-        // Non-admins must be assigned to the student
-        if ($role !== 'admin') {
+        // Non-admins (except itf_official) must be assigned to the student
+        if ($role !== 'admin' && $role !== 'itf_official') {
             $type = $role === 'industry_supervisor' ? 'industry' : 'school';
             $stmt = $db->prepare('SELECT id FROM student_supervisors WHERE supervisor_id = ? AND student_id = ? AND type = ?');
             $stmt->execute([$id, $studentId, $type]);
@@ -99,6 +99,19 @@ class StudentController {
         $stmt->execute([$studentId]);
         $student['supervisors'] = $stmt->fetchAll();
 
+        // Reviews (itf_official comments included)
+        $stmt = $db->prepare('
+            SELECT r.id, r.action, r.comment, r.created_at,
+                   sup.name AS reviewer_name, sup.role AS reviewer_role
+            FROM reviews r
+            JOIN users sup ON sup.id = r.supervisor_id
+            JOIN log_entries le ON le.id = r.log_entry_id
+            WHERE le.student_id = ?
+            ORDER BY r.created_at DESC
+        ');
+        $stmt->execute([$studentId]);
+        $student['reviews'] = $stmt->fetchAll();
+
         json_response($student);
     }
 
@@ -112,15 +125,15 @@ class StudentController {
         if (empty($body['student_id']) || empty($body['supervisor_id']) || empty($body['type'])) {
             error_response('student_id, supervisor_id and type are required');
         }
-        if (!in_array($body['type'], ['industry', 'school'], true)) {
-            error_response('type must be "industry" or "school"');
+        if (!in_array($body['type'], ['industry', 'school', 'itf'], true)) {
+            error_response('type must be "industry", "school", or "itf"');
         }
 
         $stmt = $db->prepare('SELECT id FROM users WHERE id = ? AND role = "student"');
         $stmt->execute([$body['student_id']]);
         if (!$stmt->fetch()) error_response('Student not found', 404);
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE id = ? AND role IN ("industry_supervisor","school_coordinator")');
+        $stmt = $db->prepare('SELECT id FROM users WHERE id = ? AND role IN ("industry_supervisor","school_coordinator","itf_official")');
         $stmt->execute([$body['supervisor_id']]);
         if (!$stmt->fetch()) error_response('Supervisor not found', 404);
 

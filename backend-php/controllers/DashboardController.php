@@ -72,11 +72,44 @@ class DashboardController {
             json_response($counts);
         }
 
+        if ($role === 'itf_official') {
+            $stmt = $db->query('
+                SELECT
+                    (SELECT COUNT(*) FROM users WHERE role = "student")          AS total_students,
+                    (SELECT COUNT(*) FROM log_entries)                           AS total_entries,
+                    (SELECT COUNT(*) FROM log_entries WHERE status = "pending")  AS pending_entries,
+                    (SELECT COUNT(*) FROM log_entries WHERE status = "approved") AS approved_entries,
+                    (SELECT COUNT(*) FROM log_entries WHERE status = "rejected") AS rejected_entries
+            ');
+            $counts = $stmt->fetch();
+
+            $stmt = $db->prepare('
+                SELECT COUNT(*) AS notes_this_week
+                FROM reviews
+                WHERE supervisor_id = ? AND action = "noted"
+                  AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ');
+            $stmt->execute([$id]);
+            $counts['notes_this_week'] = (int)$stmt->fetchColumn();
+
+            $stmt = $db->query('
+                SELECT le.*, u.name AS student_name, u.matric_number
+                FROM log_entries le
+                JOIN users u ON u.id = le.student_id
+                WHERE le.status = "pending"
+                ORDER BY le.created_at ASC LIMIT 5
+            ');
+            $counts['recent_pending'] = $stmt->fetchAll();
+
+            json_response($counts);
+        }
+
         // admin
         $stmt = $db->query('
             SELECT
                 (SELECT COUNT(*) FROM users WHERE role = "student")             AS total_students,
                 (SELECT COUNT(*) FROM users WHERE role IN ("industry_supervisor","school_coordinator")) AS total_supervisors,
+                (SELECT COUNT(*) FROM users WHERE role = "itf_official")        AS total_itf_officials,
                 (SELECT COUNT(*) FROM log_entries WHERE status = "pending")     AS pending_entries,
                 (SELECT COUNT(*) FROM log_entries WHERE status = "approved")    AS approved_entries,
                 (SELECT COUNT(*) FROM log_entries)                              AS total_entries
@@ -106,6 +139,21 @@ class DashboardController {
                 ORDER BY le.created_at DESC LIMIT 10
             ');
             $stmt->execute([$id, $type]);
+            json_response($stmt->fetchAll());
+            return;
+        }
+
+        if ($role === 'itf_official') {
+            $stmt = $db->query('
+                SELECT le.id, u.name AS student_name, le.created_at,
+                       "new_entry" AS type,
+                       CONCAT(u.name, " submitted a new log entry") AS text
+                FROM log_entries le
+                JOIN users u ON u.id = le.student_id
+                WHERE le.status = "pending"
+                  AND le.created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+                ORDER BY le.created_at DESC LIMIT 10
+            ');
             json_response($stmt->fetchAll());
             return;
         }

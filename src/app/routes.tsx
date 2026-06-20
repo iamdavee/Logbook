@@ -6,6 +6,7 @@ import { DashboardLayout } from "./components/DashboardLayout";
 import { StudentDashboard } from "./pages/StudentDashboard";
 import { SupervisorDashboard } from "./pages/SupervisorDashboard";
 import { SchoolSupervisorDashboard } from "./pages/SchoolSupervisorDashboard";
+import { ITFDashboard } from "./pages/ITFDashboard";
 import { ReviewsPage } from "./pages/ReviewsPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
@@ -38,6 +39,7 @@ function DashboardRouter() {
     return user.supervisorType === "school" ? <SchoolSupervisorDashboard /> : <SupervisorDashboard />;
   }
   if (user.role === "admin") return <AdminDashboard />;
+  if (user.role === "itf_official") return <ITFDashboard />;
   return <StudentDashboard />;
 }
 

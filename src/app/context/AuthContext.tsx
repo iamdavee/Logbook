@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-export type Role = "student" | "supervisor" | "admin";
+export type Role = "student" | "supervisor" | "admin" | "itf_official";
 export type SupervisorType = "industry" | "school";
 
 interface User {
@@ -39,8 +39,9 @@ export function useAuth() {
 
 function backendRoleToFrontend(backendRole: string): { role: Role; supervisorType?: SupervisorType } {
   if (backendRole === "industry_supervisor") return { role: "supervisor", supervisorType: "industry" };
-  if (backendRole === "school_coordinator") return { role: "supervisor", supervisorType: "school" };
-  if (backendRole === "admin") return { role: "admin" };
+  if (backendRole === "school_coordinator")  return { role: "supervisor", supervisorType: "school" };
+  if (backendRole === "admin")               return { role: "admin" };
+  if (backendRole === "itf_official")        return { role: "itf_official" };
   return { role: "student" };
 }
 
@@ -72,10 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Login failed");
-    }
+    if (!res.ok) throw new Error(data.error || "Login failed");
 
     const { token: jwt, user: apiUser } = data;
     const { role, supervisorType: detectedSupType } = backendRoleToFrontend(apiUser.role);

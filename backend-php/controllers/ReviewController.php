@@ -9,12 +9,12 @@ class ReviewController {
     // GET /api/reviews  — pending entries for this supervisor
     public function index(): void {
         $auth = require_auth();
-        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin']);
+        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin', 'itf_official']);
         $db   = getDB();
         $id   = (int)$auth['id'];
         $role = $auth['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'itf_official') {
             $stmt = $db->prepare('
                 SELECT le.*, u.name AS student_name, u.matric_number, u.company AS student_company
                 FROM log_entries le
@@ -42,12 +42,12 @@ class ReviewController {
     // GET /api/reviews/history
     public function history(): void {
         $auth = require_auth();
-        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin']);
+        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin', 'itf_official']);
         $db   = getDB();
         $id   = (int)$auth['id'];
         $role = $auth['role'];
 
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'itf_official') {
             $stmt = $db->prepare('
                 SELECT r.*, le.task, le.week_number, le.day_of_week, le.status,
                        u.name AS student_name, u.matric_number,
@@ -78,14 +78,23 @@ class ReviewController {
     // POST /api/reviews/{entryId}
     public function review(int $entryId): void {
         $auth = require_auth();
-        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin']);
+        require_role($auth, ['industry_supervisor', 'school_coordinator', 'admin', 'itf_official']);
         $db   = getDB();
         $id   = (int)$auth['id'];
         $role = $auth['role'];
         $body = get_body();
 
-        if (empty($body['action']) || !in_array($body['action'], ['approved', 'rejected'], true)) {
-            error_response('action must be "approved" or "rejected"');
+        // ITF officials can only add comments (noted action), not approve/reject
+        if ($role === 'itf_official') {
+            if (empty($body['comment'])) {
+                error_response('ITF officials must provide a comment');
+            }
+            $action = 'noted';
+        } else {
+            if (empty($body['action']) || !in_array($body['action'], ['approved', 'rejected'], true)) {
+                error_response('action must be "approved" or "rejected"');
+            }
+            $action = $body['action'];
         }
 
         $stmt = $db->prepare('SELECT * FROM log_entries WHERE id = ?');
@@ -93,10 +102,14 @@ class ReviewController {
         $entry = $stmt->fetch();
 
         if (!$entry) error_response('Log entry not found', 404);
-        if ($entry['status'] !== 'pending') error_response('Entry has already been reviewed');
+
+        // ITF officials can comment on any entry regardless of status
+        if ($role !== 'itf_official' && $entry['status'] !== 'pending') {
+            error_response('Entry has already been reviewed');
+        }
 
         // Non-admin supervisors must be assigned to the student
-        if ($role !== 'admin') {
+        if ($role !== 'admin' && $role !== 'itf_official') {
             $type = $role === 'industry_supervisor' ? 'industry' : 'school';
             $stmt = $db->prepare('
                 SELECT id FROM student_supervisors
@@ -111,10 +124,13 @@ class ReviewController {
             $db->prepare('
                 INSERT INTO reviews (log_entry_id, supervisor_id, action, comment)
                 VALUES (?, ?, ?, ?)
-            ')->execute([$entryId, $id, $body['action'], $body['comment'] ?? null]);
+            ')->execute([$entryId, $id, $action, $body['comment'] ?? null]);
 
-            $db->prepare('UPDATE log_entries SET status = ? WHERE id = ?')
-               ->execute([$body['action'], $entryId]);
+            // ITF officials do not change the entry status
+            if ($role !== 'itf_official') {
+                $db->prepare('UPDATE log_entries SET status = ? WHERE id = ?')
+                   ->execute([$action, $entryId]);
+            }
 
             $db->commit();
         } catch (Exception $e) {
